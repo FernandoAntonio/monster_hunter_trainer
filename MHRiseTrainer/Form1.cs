@@ -8,33 +8,29 @@ namespace MHRiseTrainer
     public partial class Form1 : Form
     {
         Mem memory = new Mem();
-        Process gameProcess;
+        Process? gameProcess;
+        String? fpsLimiterBaseAddress;
+        String? renderScaleBaseAddress;
 
         public Form1()
         {
             InitializeComponent();
-
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
-
+            ReadFromIni();
             InitializeVisualEffects();
 
             if (!searchAndInject.IsBusy)
-            {
                 searchAndInject.RunWorkerAsync();
-            }
         }
-
 
         private void searchAndInjectDoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
         {
-
             while (true)
             {
                 FindGameProcess();
-
 
                 if (gameProcess != null)
                 {
@@ -43,6 +39,9 @@ namespace MHRiseTrainer
 
                     if (isProcessOpen)
                     {
+                        processStatusValue.Invoke(t => t.Text = "Open");
+                        processStatusValue.Invoke(t => t.ForeColor = Color.Green);
+
                         try
                         {
                             ReadAndWriteFpsLimit();
@@ -51,39 +50,40 @@ namespace MHRiseTrainer
                         catch
                         {
                             isProcessOpen = false;
-                            ResetFieldValues();
+                            FailedReadAndWriteValues();
                         }
                     }
                 }
                 else
-                {
-                    ResetFieldValues();
-                }
+                    ResetAllValues();
+
+                Thread.Sleep(500);
             }
         }
 
         private void ReadAndWriteFpsLimit()
         {
-            const String address = "MonsterHunterRise.exe+0x1CF343F8,0x50,0x1F8,0x88,0x108,0x108,0x30,0x364";
-
-            decimal currentLimit = memory.ReadMemory<Decimal>(address);
+            decimal currentLimit = memory.ReadMemory<Decimal>(fpsLimiterBaseAddress);
             currentFpsLimit.Invoke(t => t.Text = currentLimit.ToString());
 
-            String currentValue = "";
-            fpsValues.Invoke(t => currentValue = t.SelectedValue.ToString());
-            memory.WriteMemory(address, "float", currentValue);
+            String selectedValue = "";
+            fpsValues.Invoke(t => selectedValue = t.SelectedValue.ToString());
+
+            if (decimal.Parse(selectedValue) != currentLimit)
+                memory.WriteMemory(fpsLimiterBaseAddress, "float", selectedValue);
         }
 
         private void ReadAndWriteRenderScale()
         {
-            const String address = "MonsterHunterRise.exe+0x0E956758,0x68,0x120,0x1D8,0xB8,0x1F8,0x48,0x88";
-
-            decimal currentLimit = memory.ReadMemory<Decimal>(address);
+            decimal currentLimit = memory.ReadMemory<Decimal>(renderScaleBaseAddress);
             currentRenderScale.Invoke(t => t.Text = currentLimit.ToString());
 
-            String currentValue = "";
-            renderScaleValues.Invoke(t => currentValue = t.SelectedValue.ToString());
-            memory.WriteMemory(address, "float", currentValue);
+            String selectedValue = "";
+            renderScaleValues.Invoke(t => selectedValue = t.SelectedValue.ToString());
+
+            if (decimal.Parse(selectedValue) != currentLimit)
+                memory.WriteMemory(renderScaleBaseAddress, "float", selectedValue);
+
         }
 
         private void FindGameProcess()
@@ -91,32 +91,28 @@ namespace MHRiseTrainer
             Process[] processes = Process.GetProcessesByName("MonsterHunterRise");
 
             if (processes.Length > 0)
-            {
                 gameProcess = processes.First();
-            }
             else
             {
                 gameProcess = null;
-                ResetFieldValues();
-            }
-
-        }
-        private void OnFpsLimitChanged(object sender, EventArgs e)
-        {
-
-            if (!searchAndInject.IsBusy)
-            {
-                searchAndInject.RunWorkerAsync();
+                ResetAllValues();
             }
         }
 
-        private void ResetFieldValues()
+        private void ResetAllValues()
         {
             processIdValue.Invoke(t => t.Text = "Not Found");
+            processStatusValue.Invoke(t => t.Text = "Closed");
+            processStatusValue.Invoke(t => t.ForeColor = Color.Red);
             currentFpsLimit.Invoke(t => t.Text = "Not Found");
             currentRenderScale.Invoke(t => t.Text = "Not Found");
         }
 
+        private void FailedReadAndWriteValues()
+        {
+            currentFpsLimit.Invoke(t => t.Text = "Failed to Read Memory");
+            currentRenderScale.Invoke(t => t.Text = "Failed to Read Memory");
+        }
 
         [DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
@@ -147,7 +143,32 @@ namespace MHRiseTrainer
                 Environment.OSVersion.Version.Build >= build;
         }
 
-        private void InitializeVisualEffects() {
+        private void ReadFromIni()
+        {
+            try
+            {
+                fpsLimiterBaseAddress = File.ReadAllText("config.ini").Split('\r', '\n').First(st => st.StartsWith("FPSLimiterAddress")).Split('=').Last();
+                renderScaleBaseAddress = File.ReadAllText("config.ini").Split('\r', '\n').First(st => st.StartsWith("RenderScaleAddress")).Split('=').Last();
+
+                if (fpsLimiterBaseAddress == null || renderScaleBaseAddress == null)
+                    ShowIniErrorDialog();
+            }
+            catch
+            {
+                ShowIniErrorDialog();
+            }
+          
+        }
+
+        private void ShowIniErrorDialog()
+        {
+            DialogResult errorMessage = MessageBox.Show("The config.ini file is missing, terminating application", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            if (errorMessage == DialogResult.OK)
+                System.Windows.Forms.Application.Exit();
+        }
+
+        private void InitializeVisualEffects()
+        {
             var listFps = new List<ComboBoxValues>() {
                 new ComboBoxValues() {Value = "30.0", Name = "30"},
                 new ComboBoxValues() {Value = "60.0", Name = "60"},
@@ -175,7 +196,7 @@ namespace MHRiseTrainer
             renderScaleValues.ValueMember = "Value";
             renderScaleValues.SelectedItem = listRenderScale[0];
 
-            UseImmersiveDarkMode(this.Handle,true);
+            UseImmersiveDarkMode(this.Handle, true);
 
         }
     }

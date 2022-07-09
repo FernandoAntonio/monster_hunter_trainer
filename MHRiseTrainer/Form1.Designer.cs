@@ -42,6 +42,8 @@
             this.renderScaleValues = new System.Windows.Forms.ComboBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.processStatusLabel = new System.Windows.Forms.Label();
+            this.processStatusValue = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.SuspendLayout();
@@ -95,7 +97,6 @@
             this.fpsValues.Size = new System.Drawing.Size(64, 23);
             this.fpsValues.TabIndex = 3;
             this.fpsValues.TabStop = false;
-            this.fpsValues.SelectedIndexChanged += new System.EventHandler(this.OnFpsLimitChanged);
             // 
             // label2
             // 
@@ -195,6 +196,30 @@
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Render Scale";
             // 
+            // processStatusLabel
+            // 
+            this.processStatusLabel.AutoSize = true;
+            this.processStatusLabel.BackColor = System.Drawing.Color.Transparent;
+            this.processStatusLabel.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            this.processStatusLabel.ForeColor = System.Drawing.Color.Silver;
+            this.processStatusLabel.Location = new System.Drawing.Point(12, 24);
+            this.processStatusLabel.Name = "processStatusLabel";
+            this.processStatusLabel.Size = new System.Drawing.Size(45, 15);
+            this.processStatusLabel.TabIndex = 12;
+            this.processStatusLabel.Text = "Status:";
+            // 
+            // processStatusValue
+            // 
+            this.processStatusValue.AutoSize = true;
+            this.processStatusValue.BackColor = System.Drawing.Color.Transparent;
+            this.processStatusValue.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.processStatusValue.ForeColor = System.Drawing.Color.Red;
+            this.processStatusValue.Location = new System.Drawing.Point(86, 24);
+            this.processStatusValue.Name = "processStatusValue";
+            this.processStatusValue.Size = new System.Drawing.Size(43, 15);
+            this.processStatusValue.TabIndex = 13;
+            this.processStatusValue.Text = "Closed";
+            // 
             // Form1
             // 
             this.AllowDrop = true;
@@ -203,6 +228,8 @@
             this.BackgroundImage = global::MHRiseTrainer.Properties.Resources.background;
             this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
             this.ClientSize = new System.Drawing.Size(284, 291);
+            this.Controls.Add(this.processStatusValue);
+            this.Controls.Add(this.processStatusLabel);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.processIdValue);
@@ -240,5 +267,7 @@
         private ComboBox renderScaleValues;
         private GroupBox groupBox1;
         private GroupBox groupBox2;
+        private Label processStatusLabel;
+        private Label processStatusValue;
     }
 }
