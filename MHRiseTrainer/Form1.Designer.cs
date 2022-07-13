@@ -50,7 +50,7 @@
             // 
             // searchAndInject
             // 
-            this.searchAndInject.DoWork += new System.ComponentModel.DoWorkEventHandler(this.searchAndInjectDoWork);
+            this.searchAndInject.DoWork += new System.ComponentModel.DoWorkEventHandler(this.SearchAndInjectDoWork);
             // 
             // processIdLabel
             // 

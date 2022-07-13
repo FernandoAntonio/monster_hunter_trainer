@@ -1,16 +1,16 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Windows.Forms;
 using Memory;
 
 namespace MHRiseTrainer
 {
     public partial class Form1 : Form
     {
-        Mem memory = new Mem();
+        readonly Mem memory = new();
         Process? gameProcess;
-        String? fpsLimiterBaseAddress;
-        String? renderScaleBaseAddress;
+        bool isProcessOpen = false;
+        string? fpsLimiterBaseAddress;
+        string? renderScaleBaseAddress;
 
         public Form1()
         {
@@ -26,22 +26,18 @@ namespace MHRiseTrainer
                 searchAndInject.RunWorkerAsync();
         }
 
-        private void searchAndInjectDoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
+        private void SearchAndInjectDoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
         {
             while (true)
             {
-                FindGameProcess();
+                ManageGameProcess();
 
                 if (gameProcess != null)
                 {
-                    processIdValue.Invoke(t => t.Text = gameProcess.Id.ToString());
-                    bool isProcessOpen = memory.OpenProcess(gameProcess.Id);
+                    ManageOpenProcess();
 
                     if (isProcessOpen)
                     {
-                        processStatusValue.Invoke(t => t.Text = "Open");
-                        processStatusValue.Invoke(t => t.ForeColor = Color.Green);
-
                         try
                         {
                             ReadAndWriteFpsLimit();
@@ -51,13 +47,15 @@ namespace MHRiseTrainer
                         {
                             isProcessOpen = false;
                             FailedReadAndWriteValues();
+                            ManageGameProcess();
+                            Thread.Sleep(5000);
                         }
                     }
                 }
                 else
                     ResetAllValues();
 
-                Thread.Sleep(500);
+                Thread.Sleep(1000);
             }
         }
 
@@ -67,7 +65,7 @@ namespace MHRiseTrainer
             currentFpsLimit.Invoke(t => t.Text = currentLimit.ToString());
 
             String selectedValue = "";
-            fpsValues.Invoke(t => selectedValue = t.SelectedValue.ToString());
+            fpsValues.Invoke(t => selectedValue = t.SelectedValue.ToString() ?? "");
 
             if (decimal.Parse(selectedValue) != currentLimit)
                 memory.WriteMemory(fpsLimiterBaseAddress, "float", selectedValue);
@@ -79,23 +77,37 @@ namespace MHRiseTrainer
             currentRenderScale.Invoke(t => t.Text = currentLimit.ToString());
 
             String selectedValue = "";
-            renderScaleValues.Invoke(t => selectedValue = t.SelectedValue.ToString());
+            renderScaleValues.Invoke(t => selectedValue = t.SelectedValue.ToString() ?? "");
 
             if (decimal.Parse(selectedValue) != currentLimit)
                 memory.WriteMemory(renderScaleBaseAddress, "float", selectedValue);
 
         }
 
-        private void FindGameProcess()
+        private void ManageGameProcess()
         {
             Process[] processes = Process.GetProcessesByName("MonsterHunterRise");
 
             if (processes.Length > 0)
+            {
                 gameProcess = processes.First();
+                processIdValue.Invoke(t => t.Text = gameProcess.Id.ToString());
+            }
             else
             {
                 gameProcess = null;
                 ResetAllValues();
+                Thread.Sleep(5000);
+            }
+        }
+
+        private void ManageOpenProcess() {
+          isProcessOpen = memory.OpenProcess(gameProcess.Id);
+
+            if (isProcessOpen)
+            {
+                processStatusValue.Invoke(t => t.Text = "Open");
+                processStatusValue.Invoke(t => t.ForeColor = Color.Green);
             }
         }
 
@@ -160,7 +172,7 @@ namespace MHRiseTrainer
           
         }
 
-        private void ShowIniErrorDialog()
+        private static void ShowIniErrorDialog()
         {
             DialogResult errorMessage = MessageBox.Show("The config.ini file is missing, terminating application", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             if (errorMessage == DialogResult.OK)
@@ -203,8 +215,8 @@ namespace MHRiseTrainer
 
     public class ComboBoxValues
     {
-        public string Value { get; set; }
-        public string Name { get; set; }
+        public string? Value { get; set; }
+        public string? Name { get; set; }
     }
 
     public static class Extensions
